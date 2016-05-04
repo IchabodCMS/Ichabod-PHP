@@ -1,0 +1,31 @@
+{
+    "name": "ichabodcms/ichabod-api",
+    "description": "A PHP wrapper for the IchabodCMS API",
+    "license": "MIT",
+    "require": {
+        "php": ">=5.3"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "4.*"
+    },
+    "config": {
+        "bin-dir": "bin"
+    },
+    "autoload": {
+        "psr-0": {
+            "IchabodCMS\\Api": "src/"
+        },
+        "psr-4": {
+            "IchabodCMS\\Api\\": "src/"
+        }
+    },
+    "homepage": "https://github.com/IchabodCMS/Ichabod-PHP",
+    "authors": [
+        {
+            "name": "James Rickard",
+            "email": "james@frodosghost.com",
+            "homepage": "http://frodosghost.com/"
+
+        }
+    ]
+}
