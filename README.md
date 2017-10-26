@@ -1,5 +1,5 @@
-IchabodCMS API
-==============
+IchabodAPI
+==========
 
 Super-simple, minimum abstraction IchabodAPI wrapper in PHP.
 
