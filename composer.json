@@ -12,11 +12,8 @@
         "bin-dir": "bin"
     },
     "autoload": {
-        "psr-0": {
-            "IchabodCMS\\Api": "src/"
-        },
         "psr-4": {
-            "IchabodCMS\\Api\\": "src/"
+            "IchabodCms\\Api\\": "src/IchabodCms/Api"
         }
     },
     "homepage": "https://github.com/IchabodCMS/Ichabod-PHP",
