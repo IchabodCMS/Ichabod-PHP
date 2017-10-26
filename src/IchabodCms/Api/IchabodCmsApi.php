@@ -11,29 +11,46 @@
 
 namespace IchabodCms\Api;
 
+use IchabodCms\Api\Exception\QueryException;
+
 /**
  * Simple API wrapper for IchabodCMS API
  *
- * IchabodCMS API: http://ichabodcms.com/developer
+ * IchabodCMS API: http://ichabodcms.com/api/getting-started
  * Wrapper:        https://github.com/IchabodCMS/Ichabod-PHP
  *
  * @version 1.0.0
  */
 class IchabodCmsApi
 {
-    private $publicKey;
-    private $privateKey;
+    private $applicationId;
+    private $apiKey;
 
-    private $api_endpoint = 'http://ichabodcms.com/api';
+    private $api_endpoint = 'http://api.ichabod.dev/app_dev.php';
 
     public  $verify_ssl   = true;
     private $lastError    = null;
+    private $lastErrorNo  = null;
     private $lastResponse = array();
 
-    public function __construct($publicKey, $privateKey)
+    public function __construct($applicationId, $apiKey)
     {
-        $this->publicKey = $publicKey;
-        $this->privateKey = $privateKey;
+        $this->applicationId = $applicationId;
+        $this->apiKey = $apiKey;
+    }
+
+    /**
+     * Run the get on the API
+     *
+     * @param  string $method     Method on the API
+     * @param  array  $attributes Attributes possible to be included in the GET query
+     * @return JSON
+     */
+    public function get($method, $attributes = [])
+    {
+        $response = $this->makeRequest('get', $method, $attributes);
+
+        return $this->formatResponse($response);
     }
 
     /**
@@ -53,17 +70,17 @@ class IchabodCmsApi
      * @param  string  $http_verb   The HTTP verb to use: get, post, put, patch, delete
      * @param  string  $method      The API method to be called
      * @param  array   $data        Assoc array of parameters to be passed
-     * @param  integer $data        Timeout set for cURL request
+     * @param  integer $timeout     Timeout set for cURL request
      *
      * @return array|false          Assoc array of decoded result
      */
-    private function makeRequest($http_verb, $method, $data=array(), $timeout=10)
+    private function makeRequest($http_verb, $method, $data=[], $timeout=10)
     {
         if (!function_exists('curl_init') || !function_exists('curl_setopt')) {
             throw new \Exception("cURL support is required, but can't be found.");
         }
 
-        $url = $this->api_endpoint.'/'.$method;
+        $url = $this->api_endpoint . $method;
         $this->last_error    = '';
         $response            = array('headers'=>null, 'body'=>null);
         $this->last_response = $response;
@@ -75,17 +92,17 @@ class IchabodCmsApi
         $time->setTimezone(new \DateTimeZone('UTC'));
         $time_format = $time->format('c');
 
-        $digest = $time_format ."\n". strtoupper($http_verb) ."\n". 'application/vnd.api+json' ."\n". md5(json_encode($data));
-        $signature = base64_encode(hash_hmac('sha1', $digest, $this->privateKey, TRUE));
+        /*$digest = $time_format ."\n". strtoupper($http_verb) ."\n". 'application/vnd.api+json' ."\n". md5(json_encode($data));
+        $signature = base64_encode(hash_hmac('sha1', $digest, $this->apiKey, TRUE));*/
 
         curl_setopt($ch, CURLOPT_HTTPHEADER, array(
             "Accept: application/vnd.api+json",
             "Content-Type: application/vnd.api+json",
             "Date: $time_format",
-            "Authorization: Atom {$this->publicKey}:{$signature}",
+            "Authorization: Bearer {$this->applicationId}:{$this->apiKey}",
             "X-Accept-Version: 1"
         ));
-        curl_setopt($ch, CURLOPT_USERAGENT, 'IchabodCMSApi (github.com/IchabodCMS/Ichabod-PHP)');
+        curl_setopt($ch, CURLOPT_USERAGENT, 'IchabodAPI (github.com/IchabodCMS/Ichabod-PHP)');
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, $this->verify_ssl);
@@ -120,6 +137,12 @@ class IchabodCmsApi
 
         if ($response['body'] === false) {
             $this->lastError = curl_error($ch);
+            $this->lastErrorNo = curl_errno($ch);
+
+            throw new QueryException(sprintf('cUrl Error (%d) Thrown: %s', $this->lastErrorNo, $this->lastError), [
+                'detail' => $this->lastError,
+                'status' => $this->lastErrorNo
+            ], $this->lastErrorNo);
         }
 
         curl_close($ch);
@@ -135,7 +158,7 @@ class IchabodCmsApi
             $body = json_decode($response['body'], true);
 
             if ( !(($headers['http_code'] == '200') || ($headers['http_code'] == '201')) ) {
-                $this->lastError = sprintf('%d: %s', $headers['http_code'], $body['message']);
+                throw new QueryException(sprintf('%d: %s', $headers['http_code'], $body['error']['detail']), $body['error'], $headers['http_code']);
             }
 
             return $body;
