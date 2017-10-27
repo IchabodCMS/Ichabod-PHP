@@ -26,7 +26,7 @@ class IchabodCmsApi
     private $applicationId;
     private $apiKey;
 
-    private $api_endpoint = 'http://api.ichabod.dev/app_dev.php';
+    private $api_endpoint = 'http://api.ichabodcms.com';
 
     public  $verify_ssl   = true;
     private $lastError    = null;
